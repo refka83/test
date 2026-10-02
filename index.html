@@ -328,8 +328,11 @@
     <span id="toastText">تم حفظ الصلاة</span>
   </div>
 
-  <script>
-    // Constants & Default Data
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
     const PRAYERS_CONFIG = [
       { id: 'fajr', name: 'صلاة الفجر', icon: '🌅', points: 20, time: 'ركعتان في وقت الصبح' },
       { id: 'dhuhr', name: 'صلاة الظهر', icon: '☀️', points: 20, time: 'أربع ركعات ظهراً' },
@@ -358,15 +361,14 @@
       "ما أجمل صلاتك وأنت بين يدي الله الكريم 🌸"
     ];
 
-    const TEACHER_PHONE = "15142497732"; // +15142497732
+    const TEACHER_PHONE = "15142497732";
 
-    // Application State Object
     let gameState = {
       user: {
         name: '',
         gender: 'boy'
       },
-      currentDayIndex: 0, // 0 to 6 (Day 1 to 7)
+      currentDayIndex: 0,
       isCompleted: false,
       daysData: [
         { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
@@ -393,7 +395,6 @@
       return audioCtx;
     }
 
-    // Play a delightful musical chime
     function playChime(isCheck) {
       if (!audioEnabled) return;
       try {
@@ -405,13 +406,11 @@
 
         osc.type = 'sine';
         if (isCheck) {
-          // Happy ascending tone
-          osc.frequency.setValueAtTime(523.25, now); // C5
-          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15);
         } else {
-          // Gentle undo tone
-          osc.frequency.setValueAtTime(587.33, now); // D5
-          osc.frequency.exponentialRampToValueAtTime(392.00, now + 0.12); // G4
+          osc.frequency.setValueAtTime(587.33, now);
+          osc.frequency.exponentialRampToValueAtTime(392.00, now + 0.12);
         }
 
         gain.gain.setValueAtTime(0.2, now);
@@ -426,14 +425,13 @@
       }
     }
 
-    // Play celebratory fanfare
     function playVictoryFanfare() {
       if (!audioEnabled) return;
       try {
         const ctx = getAudioContext();
         if (!ctx) return;
         const now = ctx.currentTime;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -459,29 +457,79 @@
       showToast(audioEnabled ? 'تم تفعيل الصوت' : 'تم كتم الصوت', '🎵');
     }
 
-    function loadSavedState() {
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'prayer-challenge-default';
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+
+    async function initStorageAndAuth() {
       try {
-        const raw = localStorage.getItem('prayer_challenge_hero_state');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.user && parsed.daysData) {
-            gameState = parsed;
+        if (typeof __firebase_config !== 'undefined') {
+          const firebaseConfig = JSON.parse(__firebase_config);
+          const app = initializeApp(firebaseConfig);
+          auth = getAuth(app);
+          db = getFirestore(app);
+
+          let cred;
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            cred = await signInWithCustomToken(auth, __initial_auth_token);
+          } else {
+            cred = await signInAnonymously(auth);
           }
+          currentUser = cred.user;
+
+          // Real-time synchronization for child's progress
+          setupProgressSync();
         }
       } catch (err) {
-        console.warn("Could not parse saved storage", err);
+        console.error("Storage initialization error:", err);
       }
     }
 
-    function saveState() {
+    function setupProgressSync() {
+      if (!db || !currentUser) return;
+      const progressDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'prayerChallenge', 'weekProgress');
+      
+      onSnapshot(progressDocRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data && data.user && data.daysData) {
+            gameState.user = data.user;
+            gameState.currentDayIndex = typeof data.currentDayIndex === 'number' ? data.currentDayIndex : 0;
+            gameState.isCompleted = !!data.isCompleted;
+            gameState.daysData = data.daysData;
+
+            if (gameState.user.gender) {
+              selectGender(gameState.user.gender);
+            }
+            if (gameState.user.name) {
+              const nameInput = document.getElementById('childNameInput');
+              if (nameInput) nameInput.value = gameState.user.name;
+            }
+            renderAppView();
+          }
+        }
+      }, (error) => {
+        console.warn("Storage sync notice:", error);
+      });
+    }
+
+    async function saveState() {
+      if (!db || !currentUser) return;
       try {
-        localStorage.setItem('prayer_challenge_hero_state', JSON.stringify(gameState));
-      } catch (e) {
-        console.warn("Saving to localStorage failed", e);
+        const progressDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'prayerChallenge', 'weekProgress');
+        await setDoc(progressDocRef, {
+          user: gameState.user,
+          currentDayIndex: gameState.currentDayIndex,
+          isCompleted: gameState.isCompleted,
+          daysData: gameState.daysData,
+          lastUpdated: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error("Failed to save progress:", err);
       }
     }
 
-    // Toast helper
     let toastTimer = null;
     function showToast(text, icon = '✨') {
       const toast = document.getElementById('toastNotification');
@@ -510,13 +558,13 @@
       }
     }
 
-    function handleStartChallenge(e) {
+    async function handleStartChallenge(e) {
       e.preventDefault();
       const nameInput = document.getElementById('childNameInput').value.trim();
       if (!nameInput) return;
 
       gameState.user.name = nameInput;
-      saveState();
+      await saveState();
       playChime(true);
       confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
       renderAppView();
@@ -561,7 +609,6 @@
         const isCurrent = (i === gameState.currentDayIndex && !gameState.isCompleted);
         const isPast = (i < gameState.currentDayIndex || gameState.isCompleted);
         
-        // Calculate day's completion status
         const dayPrayers = gameState.daysData[i].prayers;
         const finishedCount = Object.values(dayPrayers).filter(Boolean).length;
         const allCompleted = finishedCount === 5;
@@ -626,7 +673,6 @@
             </div>
           </div>
 
-          <!-- Checkbox / Toggle Indicator -->
           <div class="w-9 h-9 rounded-2xl border-2 flex items-center justify-center transition-all ${
             isDone ? activeColor : 'border-slate-300 bg-white'
           }">
@@ -637,7 +683,7 @@
       });
     }
 
-    function togglePrayer(prayerId) {
+    async function togglePrayer(prayerId) {
       const currentDay = gameState.daysData[gameState.currentDayIndex];
       const newState = !currentDay.prayers[prayerId];
       currentDay.prayers[prayerId] = newState;
@@ -652,17 +698,15 @@
         });
       }
 
-      saveState();
+      await saveState();
       updateDashboardUI();
     }
 
     function updateDashboardUI() {
-      // Header values
       document.getElementById('headerTotalPoints').textContent = calculateTotalScore();
       document.getElementById('dayPointsDisplay').textContent = `${calculateDayScore(gameState.currentDayIndex)} / 100`;
       document.getElementById('currentDayTitle').textContent = `${DAYS_NAMES[gameState.currentDayIndex]} 📅`;
 
-      // Next button text
       const nextBtnText = document.getElementById('nextDayBtnText');
       if (gameState.currentDayIndex === 6) {
         nextBtnText.textContent = "إنهاء التحدي الأسبوعي وعرض النتيجة النهائية 🏆";
@@ -670,7 +714,6 @@
         nextBtnText.textContent = `إتمام ${DAYS_NAMES[gameState.currentDayIndex]} والانتقال لليوم التالي`;
       }
 
-      // Motivational phrase rotation
       const quote = MOTIVATIONAL_QUOTES[gameState.currentDayIndex % MOTIVATIONAL_QUOTES.length];
       document.getElementById('motivationalPhrase').textContent = quote;
 
@@ -686,19 +729,18 @@
       document.getElementById('confirmDayModal').classList.add('hidden');
     }
 
-    function executeNextDay() {
+    async function executeNextDay() {
       closeConfirmModal();
       playVictoryFanfare();
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 } });
 
       if (gameState.currentDayIndex >= 6) {
-        // Completed week!
         gameState.isCompleted = true;
-        saveState();
+        await saveState();
         renderAppView();
       } else {
         gameState.currentDayIndex++;
-        saveState();
+        await saveState();
         updateDashboardUI();
         showToast(`أحسنت! انتقلت إلى ${DAYS_NAMES[gameState.currentDayIndex]} 🚀`, '🚀');
       }
@@ -706,7 +748,6 @@
 
     function renderReportScreen() {
       const name = gameState.user.name || 'البطل';
-      const isGirl = gameState.user.gender === 'girl';
       const totalPoints = calculateTotalScore();
       const completedPrayers = countTotalCompletedPrayers();
 
@@ -728,7 +769,6 @@
         evalElem.textContent = `أحسنت المحاولة يا ${name}! في الأسبوع القادم ستكون أقوى وتجمع نقاطاً أكثر بإذن الله 💪`;
       }
 
-      // Launch full festive fireworks
       confetti({
         particleCount: 150,
         spread: 100,
@@ -743,7 +783,6 @@
       const totalPoints = calculateTotalScore();
       const completedPrayers = countTotalCompletedPrayers();
 
-      // Clean message formatting for WhatsApp
       const messageText = 
 `السلام عليكم ورحمة الله وبركاته معلمتي الغالية 🌸
 أنا ${title}: *${name}* 🕌✨
@@ -758,7 +797,6 @@
       const encodedMessage = encodeURIComponent(messageText);
       const whatsappUrl = `https://wa.me/${TEACHER_PHONE}?text=${encodedMessage}`;
 
-      // Open WhatsApp in new tab/window
       window.open(whatsappUrl, '_blank');
       showToast('جاري فتح واتساب لإرسال التقرير للمعلمة...', '📲');
     }
@@ -771,9 +809,8 @@
       document.getElementById('resetModal').classList.add('hidden');
     }
 
-    function resetChallengeFully() {
+    async function resetChallengeFully() {
       closeResetModal();
-      // Keep name and gender, reset progress
       const savedUser = { ...gameState.user };
       gameState = {
         user: savedUser,
@@ -789,7 +826,7 @@
           { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } }
         ]
       };
-      saveState();
+      await saveState();
       showToast('بدأ أسبوع جديد بنجاح! بالتوفيق يا بطل ✨', '🌱');
       renderAppView();
     }
@@ -802,7 +839,6 @@
       const userDisplayName = document.getElementById('userDisplayName');
       const userAvatarIcon = document.getElementById('userAvatarIcon');
 
-      // Check if user is registered
       if (!gameState.user.name) {
         screenOnboarding.classList.remove('hidden');
         screenDashboard.classList.add('hidden');
@@ -811,7 +847,6 @@
         return;
       }
 
-      // Update header
       userHeaderBadge.classList.remove('hidden');
       userHeaderBadge.classList.add('flex');
       userDisplayName.textContent = gameState.user.name;
@@ -829,9 +864,20 @@
       }
     }
 
-    // Initialize application on window load
-    window.addEventListener('DOMContentLoaded', () => {
-      loadSavedState();
+    window.selectGender = selectGender;
+    window.handleStartChallenge = handleStartChallenge;
+    window.togglePrayer = togglePrayer;
+    window.confirmFinishDay = confirmFinishDay;
+    window.closeConfirmModal = closeConfirmModal;
+    window.executeNextDay = executeNextDay;
+    window.sendWhatsAppReport = sendWhatsAppReport;
+    window.openResetModal = openResetModal;
+    window.closeResetModal = closeResetModal;
+    window.resetChallengeFully = resetChallengeFully;
+    window.toggleAudio = toggleAudio;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initStorageAndAuth();
       if (gameState.user.gender) {
         selectGender(gameState.user.gender);
       }
