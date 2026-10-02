@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تحدي الصلاة الأسبوعي للأبطال 🕌✨</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti for celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Google Fonts: Tajawal -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            tajawal: ['Tajawal', 'sans-serif'],
+          },
+          colors: {
+            boyPrimary: '#2563EB',
+            boySecondary: '#60A5FA',
+            girlPrimary: '#DB2777',
+            girlSecondary: '#F472B6',
+            goldStar: '#F59E0B',
+          },
+          keyframes: {
+            bounceSlight: {
+              '0%, 100%': { transform: 'translateY(-4px)' },
+              '50%': { transform: 'translateY(4px)' },
+            },
+            pop: {
+              '0%': { transform: 'scale(0.8)' },
+              '50%': { transform: 'scale(1.1)' },
+              '100%': { transform: 'scale(1)' },
+            }
+          },
+          animation: {
+            bounceSlight: 'bounceSlight 2s infinite ease-in-out',
+            pop: 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Tajawal', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cloud-bg {
+      background-image: radial-gradient(#e0e7ff 1.5px, transparent 1.5px), radial-gradient(#ede9fe 1.5px, #f8fafc 1.5px);
+      background-size: 30px 30px;
+      background-position: 0 0, 15px 15px;
+    }
+    .prayer-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .prayer-card:active {
+      transform: scale(0.96);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="cloud-bg min-h-screen text-slate-800 flex flex-col items-center justify-between p-3 sm:p-5 selection:bg-amber-300">
+
+  <!-- Top App Navigation / Status Bar -->
+  <header class="w-full max-w-lg flex items-center justify-between mb-4 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-sm border border-slate-100">
+    <div class="flex items-center gap-2">
+      <span class="text-2xl animate-spin-slow">⭐</span>
+      <div>
+        <span class="text-xs text-slate-500 font-bold block">مجموع النقاط</span>
+        <span id="headerTotalPoints" class="text-xl font-extrabold text-amber-500 font-tajawal">0</span>
+      </div>
+    </div>
+    
+    <div id="userHeaderBadge" class="hidden items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-200">
+      <span id="userAvatarIcon" class="text-xl">👦</span>
+      <span id="userDisplayName" class="text-sm font-bold text-slate-700">البطل</span>
+    </div>
+
+    <!-- Mute/Sound toggle -->
+    <button onclick="toggleAudio()" id="soundBtn" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition" title="تشغيل/كتم الصوت">
+      🔊
+    </button>
+  </header>
+
+  <main class="w-full max-w-lg flex-1 flex flex-col justify-center">
+    
+    <!-- Screen 1: Welcome & Character Setup -->
+    <div id="screenOnboarding" class="bg-white rounded-3xl p-6 shadow-xl border-4 border-amber-200 text-center relative overflow-hidden transition-all duration-300">
+      <div class="absolute -top-8 -right-8 w-24 h-24 bg-amber-100 rounded-full blur-xl pointer-events-none"></div>
+      <div class="absolute -bottom-8 -left-8 w-24 h-24 bg-sky-100 rounded-full blur-xl pointer-events-none"></div>
+
+      <div class="inline-block p-4 bg-amber-50 rounded-full mb-3 animate-bounceSlight border-2 border-amber-200 shadow-inner">
+        <span class="text-5xl">🕌</span>
+      </div>
+
+      <h1 class="text-2xl sm:text-3xl font-black text-slate-800 mb-2">تحدي الصلاة الأسبوعي</h1>
+      <p class="text-slate-600 text-sm sm:text-base font-medium mb-6">
+        أهلاً بك في رحلة الأبطال! حافظ على صلاتك لمدة 7 أيام واجمع النجوم لتكون فخر والديك ومعلمتك 🌟
+      </p>
+
+      <form id="onboardingForm" onsubmit="handleStartChallenge(event)" class="space-y-5 text-right">
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-2">ما اسمك يا بطل؟ ✨</label>
+          <input 
+            type="text" 
+            id="childNameInput" 
+            required 
+            maxlength="20"
+            placeholder="اكتب اسمك هنا..."
+            class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-amber-400 focus:outline-none text-base font-bold transition text-slate-800 placeholder-slate-400 bg-slate-50"
+          >
+        </div>
+
+        <div>
+          <label class="block text-sm font-bold text-slate-700 mb-2">اختر بطلك 🎨</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button 
+              type="button" 
+              onclick="selectGender('boy')" 
+              id="genderBtnBoy"
+              class="flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-blue-400 bg-blue-50/70 hover:bg-blue-100 transition cursor-pointer"
+            >
+              <span class="text-4xl mb-1">👦</span>
+              <span class="font-extrabold text-blue-600 text-sm">أنا بطل (ولد)</span>
+            </button>
+            <button 
+              type="button" 
+              onclick="selectGender('girl')" 
+              id="genderBtnGirl"
+              class="flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-slate-200 bg-slate-50 hover:bg-pink-50 transition cursor-pointer"
+            >
+              <span class="text-4xl mb-1">👧</span>
+              <span class="font-extrabold text-slate-600 text-sm">أنا بطلة (بنت)</span>
+            </button>
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-extrabold text-lg shadow-lg shadow-amber-200 transition active:scale-95 flex items-center justify-center gap-2"
+        >
+          <span>ابدأ التحدي الآن</span>
+          <span class="text-xl">🚀</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Screen 2: Challenge Dashboard -->
+    <div id="screenDashboard" class="hidden space-y-4">
+      
+      <!-- Day Progress Header Card -->
+      <div class="bg-white rounded-3xl p-5 shadow-lg border border-slate-100">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">مسار التحدي</span>
+            <h2 id="currentDayTitle" class="text-xl font-black text-slate-800">اليوم الأول 📅</h2>
+          </div>
+          <div class="text-left bg-amber-50 px-3 py-1.5 rounded-2xl border border-amber-200">
+            <span class="text-xs text-amber-700 font-bold block">نقاط اليوم</span>
+            <span id="dayPointsDisplay" class="text-lg font-black text-amber-500">0 / 100</span>
+          </div>
+        </div>
+
+        <!-- 7-Days Timeline dots -->
+        <div class="grid grid-cols-7 gap-1.5 sm:gap-2 pt-2 border-t border-slate-100 text-center" id="daysTrackContainer">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <div class="mt-3 bg-amber-50 rounded-xl p-2.5 flex items-center gap-2 text-amber-800 text-xs font-semibold">
+          <span class="text-base">⚠️</span>
+          <span>تنبيه: اضغط على الصلاة بعد تأديتها، وعند إنهاء اليوم سينتقل التحدي لليوم التالي ولا يمكن الرجوع!</span>
+        </div>
+      </div>
+
+      <!-- Prayers List -->
+      <div class="space-y-2.5" id="prayersListContainer">
+        <!-- Fajr, Dhuhr, Asr, Maghrib, Isha rendered via JS -->
+      </div>
+
+      <!-- Motivational Quote Banner -->
+      <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3.5 rounded-2xl shadow-md flex items-center gap-3">
+        <span class="text-3xl animate-bounceSlight">✨</span>
+        <p id="motivationalPhrase" class="text-xs sm:text-sm font-bold leading-relaxed">
+          الصلاة نور القلب وسعادة اليوم، بارك الله فيك يا بطل!
+        </p>
+      </div>
+
+      <!-- Lock Day & Next Button -->
+      <button 
+        type="button" 
+        onclick="confirmFinishDay()"
+        class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-base shadow-xl shadow-blue-200 transition transform active:scale-95 flex items-center justify-center gap-2"
+      >
+        <span id="nextDayBtnText">إتمام صلوات هذا اليوم والانتقال لليوم التالي</span>
+        <span class="text-xl">➡️</span>
+      </button>
+
+    </div>
+
+    <!-- Screen 3: Week Complete & Teacher Report Screen -->
+    <div id="screenReport" class="hidden bg-white rounded-3xl p-6 shadow-2xl border-4 border-amber-300 text-center space-y-5">
+      <div class="inline-block p-4 bg-yellow-100 rounded-full animate-bounce">
+        <span class="text-6xl">🏆</span>
+      </div>
+
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-black text-slate-800 mb-1">مبارك يا بطل التحدي! 🎉</h2>
+        <p class="text-slate-600 text-sm font-bold">أتممت 7 أيام من العزيمة والمحافظة على الصلوات</p>
+      </div>
+
+      <!-- Certificate Box -->
+      <div id="certificateCard" class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 border-2 border-dashed border-amber-300 text-right space-y-3">
+        <div class="flex items-center justify-between border-b border-amber-200 pb-2">
+          <span class="text-xs text-amber-700 font-bold">وسام الأسبوع</span>
+          <span id="badgeIcon" class="text-2xl">👑</span>
+        </div>
+        <p class="text-sm font-semibold text-slate-700">
+          نشهد أن البطل/البطلة: <span id="reportChildName" class="font-extrabold text-amber-600 text-base"></span>
+        </p>
+        <div class="grid grid-cols-2 gap-2 text-center pt-1">
+          <div class="bg-white/80 p-2.5 rounded-xl border border-amber-100">
+            <span class="block text-xs text-slate-500 font-bold">مجموع النقاط</span>
+            <span id="reportTotalPoints" class="text-xl font-black text-amber-600">0</span>
+          </div>
+          <div class="bg-white/80 p-2.5 rounded-xl border border-amber-100">
+            <span class="block text-xs text-slate-500 font-bold">الصلوات المنجزة</span>
+            <span id="reportCompletedCount" class="text-xl font-black text-emerald-600">0 / 35</span>
+          </div>
+        </div>
+        <p id="reportEvaluationText" class="text-xs text-slate-600 font-bold text-center pt-1">
+          ما شاء الله! همة عالية وعمل مبارك 🌿
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="space-y-3">
+        <button 
+          type="button" 
+          onclick="sendWhatsAppReport()"
+          class="w-full py-4 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-base shadow-lg shadow-emerald-200 transition transform active:scale-95 flex items-center justify-center gap-3"
+        >
+          <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+          </svg>
+          <span>إرسال التقرير للمعلمة عبر واتساب</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="openResetModal()"
+          class="w-full py-3 px-5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition flex items-center justify-center gap-2"
+        >
+          <span>بدء أسبوع جديد 🔄</span>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Dialog: Confirm Next Day Lock Modal -->
+  <div id="confirmDayModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 animate-pop border-2 border-amber-200">
+      <div class="text-5xl">🛑</div>
+      <h3 class="text-xl font-black text-slate-800">هل أنت متأكد يا بطل؟</h3>
+      <p class="text-sm text-slate-600 leading-relaxed font-medium">
+        بمجرد تأكيد صلوات هذا اليوم، <span class="font-bold text-rose-500">لن تتمكن من العودة إليه</span> أو تعديله. هل أديت هذه الصلوات بصدق؟
+      </p>
+
+      <div class="flex gap-3 pt-2">
+        <button 
+          onclick="executeNextDay()"
+          class="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md transition"
+        >
+          نعم، أكملت صلواتي! 🌟
+        </button>
+        <button 
+          onclick="closeConfirmModal()"
+          class="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition"
+        >
+          تعديل
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Reset Challenge Modal -->
+  <div id="resetModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 animate-pop border-2 border-slate-200">
+      <div class="text-5xl">🔄</div>
+      <h3 class="text-xl font-black text-slate-800">بدء أسبوع صلاة جديد</h3>
+      <p class="text-sm text-slate-600 leading-relaxed font-medium">
+        هل تريد مسح سجل الأسبوع الحالي وبدء تحدٍ جديد بنقاط جديدة؟
+      </p>
+      <div class="flex gap-3 pt-2">
+        <button 
+          onclick="resetChallengeFully()"
+          class="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md transition"
+        >
+          نعم، أسبوع جديد
+        </button>
+        <button 
+          onclick="closeResetModal()"
+          class="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition"
+        >
+          إلغاء
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastNotification" class="fixed bottom-5 right-1/2 translate-x-1/2 z-50 hidden bg-slate-900/90 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-lg items-center gap-2 transition-all">
+    <span id="toastIcon">✨</span>
+    <span id="toastText">تم حفظ الصلاة</span>
+  </div>
+
+  <script>
+    // Constants & Default Data
+    const PRAYERS_CONFIG = [
+      { id: 'fajr', name: 'صلاة الفجر', icon: '🌅', points: 20, time: 'ركعتان في وقت الصبح' },
+      { id: 'dhuhr', name: 'صلاة الظهر', icon: '☀️', points: 20, time: 'أربع ركعات ظهراً' },
+      { id: 'asr', name: 'صلاة العصر', icon: '🌤️', points: 20, time: 'أربع ركعات عصراً' },
+      { id: 'maghrib', name: 'صلاة المغرب', icon: '🌇', points: 20, time: 'ثلاث ركعات عند الغروب' },
+      { id: 'isha', name: 'صلاة العشاء', icon: '🌙', points: 20, time: 'أربع ركعات ليلاً' }
+    ];
+
+    const DAYS_NAMES = [
+      'اليوم الأول',
+      'اليوم الثاني',
+      'اليوم الثالث',
+      'اليوم الرابع',
+      'اليوم الخامس',
+      'اليوم السادس',
+      'اليوم السابع'
+    ];
+
+    const MOTIVATIONAL_QUOTES = [
+      "أحب الأعمال إلى الله: الصلاة على وقتها 🕌",
+      "من صلى الصلاة لوقتها كان له عند الله عهدٌ ونور 🌟",
+      "صلاة الفجر تجعلك في ذمة الله ورعايته طول يومك 🌅",
+      "الصلاة تنير الوجه وتملأ القلب شجاعة وطمأنينة 💖",
+      "أنت بطل حقيقي يفتخر به رسولنا الكريم ﷺ 🌿",
+      "كل سجدة لله ترفعك درجة في الجنة 🕊️",
+      "ما أجمل صلاتك وأنت بين يدي الله الكريم 🌸"
+    ];
+
+    const TEACHER_PHONE = "15142497732"; // +15142497732
+
+    // Application State Object
+    let gameState = {
+      user: {
+        name: '',
+        gender: 'boy'
+      },
+      currentDayIndex: 0, // 0 to 6 (Day 1 to 7)
+      isCompleted: false,
+      daysData: [
+        { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+        { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+        { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+        { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+        { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+        { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+        { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } }
+      ]
+    };
+
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // Play a delightful musical chime
+    function playChime(isCheck) {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        if (isCheck) {
+          // Happy ascending tone
+          osc.frequency.setValueAtTime(523.25, now); // C5
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.15); // G5
+        } else {
+          // Gentle undo tone
+          osc.frequency.setValueAtTime(587.33, now); // D5
+          osc.frequency.exponentialRampToValueAtTime(392.00, now + 0.12); // G4
+        }
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } catch (e) {
+        console.warn("Audio chime failed:", e);
+      }
+    }
+
+    // Play celebratory fanfare
+    function playVictoryFanfare() {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+          gain.gain.setValueAtTime(0.25, now + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.4);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.12);
+          osc.stop(now + idx * 0.12 + 0.45);
+        });
+      } catch (e) {
+        console.warn("Victory sound failed:", e);
+      }
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('soundBtn');
+      btn.textContent = audioEnabled ? '🔊' : '🔇';
+      showToast(audioEnabled ? 'تم تفعيل الصوت' : 'تم كتم الصوت', '🎵');
+    }
+
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem('prayer_challenge_hero_state');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.user && parsed.daysData) {
+            gameState = parsed;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not parse saved storage", err);
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('prayer_challenge_hero_state', JSON.stringify(gameState));
+      } catch (e) {
+        console.warn("Saving to localStorage failed", e);
+      }
+    }
+
+    // Toast helper
+    let toastTimer = null;
+    function showToast(text, icon = '✨') {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastText').textContent = text;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 2500);
+    }
+
+    function selectGender(gender) {
+      gameState.user.gender = gender;
+      const boyBtn = document.getElementById('genderBtnBoy');
+      const girlBtn = document.getElementById('genderBtnGirl');
+
+      if (gender === 'boy') {
+        boyBtn.className = "flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-blue-500 bg-blue-100/70 text-blue-700 shadow-sm transition";
+        girlBtn.className = "flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-600 transition";
+      } else {
+        girlBtn.className = "flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-pink-500 bg-pink-100/70 text-pink-700 shadow-sm transition";
+        boyBtn.className = "flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-600 transition";
+      }
+    }
+
+    function handleStartChallenge(e) {
+      e.preventDefault();
+      const nameInput = document.getElementById('childNameInput').value.trim();
+      if (!nameInput) return;
+
+      gameState.user.name = nameInput;
+      saveState();
+      playChime(true);
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+      renderAppView();
+    }
+
+    function calculateTotalScore() {
+      let total = 0;
+      gameState.daysData.forEach(day => {
+        Object.values(day.prayers).forEach(done => {
+          if (done) total += 20;
+        });
+      });
+      return total;
+    }
+
+    function calculateDayScore(dayIndex) {
+      let dayTotal = 0;
+      const day = gameState.daysData[dayIndex];
+      if (day) {
+        Object.values(day.prayers).forEach(done => {
+          if (done) dayTotal += 20;
+        });
+      }
+      return dayTotal;
+    }
+
+    function countTotalCompletedPrayers() {
+      let count = 0;
+      gameState.daysData.forEach(day => {
+        Object.values(day.prayers).forEach(done => {
+          if (done) count++;
+        });
+      });
+      return count;
+    }
+
+    function renderDaysTimeline() {
+      const container = document.getElementById('daysTrackContainer');
+      container.innerHTML = '';
+
+      for (let i = 0; i < 7; i++) {
+        const isCurrent = (i === gameState.currentDayIndex && !gameState.isCompleted);
+        const isPast = (i < gameState.currentDayIndex || gameState.isCompleted);
+        
+        // Calculate day's completion status
+        const dayPrayers = gameState.daysData[i].prayers;
+        const finishedCount = Object.values(dayPrayers).filter(Boolean).length;
+        const allCompleted = finishedCount === 5;
+
+        const dayPill = document.createElement('div');
+        dayPill.className = `flex flex-col items-center py-2 px-1 rounded-xl transition ${
+          isCurrent 
+            ? 'bg-amber-400 text-white font-black shadow-md scale-105 border-2 border-amber-300' 
+            : isPast 
+              ? (allCompleted ? 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-300' : 'bg-slate-100 text-slate-700 font-medium')
+              : 'bg-slate-50 text-slate-400 opacity-60'
+        }`;
+
+        let statusIcon = '🔒';
+        if (isCurrent) statusIcon = '📍';
+        else if (isPast) statusIcon = allCompleted ? '⭐' : '✔️';
+
+        dayPill.innerHTML = `
+          <span class="text-xs font-bold block mb-0.5">يوم ${i + 1}</span>
+          <span class="text-sm">${statusIcon}</span>
+          <span class="text-[10px] mt-1 font-bold">${isPast || isCurrent ? finishedCount + '/5' : '-'}</span>
+        `;
+        container.appendChild(dayPill);
+      }
+    }
+
+    function renderPrayersList() {
+      const listContainer = document.getElementById('prayersListContainer');
+      listContainer.innerHTML = '';
+
+      const currentDay = gameState.daysData[gameState.currentDayIndex];
+      const isGirl = gameState.user.gender === 'girl';
+      const activeColor = isGirl ? 'bg-pink-500 text-white border-pink-500' : 'bg-blue-600 text-white border-blue-600';
+      const activeCardBorder = isGirl ? 'border-pink-300 bg-pink-50/50' : 'border-blue-300 bg-blue-50/50';
+
+      PRAYERS_CONFIG.forEach(prayer => {
+        const isDone = currentDay.prayers[prayer.id];
+
+        const card = document.createElement('div');
+        card.className = `prayer-card rounded-2xl p-4 flex items-center justify-between border-2 transition cursor-pointer select-none ${
+          isDone ? `${activeCardBorder} shadow-sm` : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+        }`;
+        card.onclick = () => togglePrayer(prayer.id);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${
+              isDone ? 'bg-white shadow-inner' : 'bg-slate-100'
+            }">
+              ${prayer.icon}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="font-extrabold text-base ${isDone ? 'text-slate-900 line-through decoration-amber-400 decoration-2' : 'text-slate-800'}">
+                  ${prayer.name}
+                </h4>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                  isDone ? 'bg-amber-400 text-amber-950 font-black' : 'bg-amber-100 text-amber-800'
+                }">+${prayer.points} نقطة ⭐</span>
+              </div>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">${prayer.time}</p>
+            </div>
+          </div>
+
+          <!-- Checkbox / Toggle Indicator -->
+          <div class="w-9 h-9 rounded-2xl border-2 flex items-center justify-center transition-all ${
+            isDone ? activeColor : 'border-slate-300 bg-white'
+          }">
+            ${isDone ? '<span class="text-lg font-black text-white">✓</span>' : ''}
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    function togglePrayer(prayerId) {
+      const currentDay = gameState.daysData[gameState.currentDayIndex];
+      const newState = !currentDay.prayers[prayerId];
+      currentDay.prayers[prayerId] = newState;
+
+      playChime(newState);
+      if (newState) {
+        showToast('رائع! كسبت 20 نقطة يا بطل 🌟', '🌟');
+        confetti({
+          particleCount: 20,
+          spread: 45,
+          origin: { y: 0.8 }
+        });
+      }
+
+      saveState();
+      updateDashboardUI();
+    }
+
+    function updateDashboardUI() {
+      // Header values
+      document.getElementById('headerTotalPoints').textContent = calculateTotalScore();
+      document.getElementById('dayPointsDisplay').textContent = `${calculateDayScore(gameState.currentDayIndex)} / 100`;
+      document.getElementById('currentDayTitle').textContent = `${DAYS_NAMES[gameState.currentDayIndex]} 📅`;
+
+      // Next button text
+      const nextBtnText = document.getElementById('nextDayBtnText');
+      if (gameState.currentDayIndex === 6) {
+        nextBtnText.textContent = "إنهاء التحدي الأسبوعي وعرض النتيجة النهائية 🏆";
+      } else {
+        nextBtnText.textContent = `إتمام ${DAYS_NAMES[gameState.currentDayIndex]} والانتقال لليوم التالي`;
+      }
+
+      // Motivational phrase rotation
+      const quote = MOTIVATIONAL_QUOTES[gameState.currentDayIndex % MOTIVATIONAL_QUOTES.length];
+      document.getElementById('motivationalPhrase').textContent = quote;
+
+      renderDaysTimeline();
+      renderPrayersList();
+    }
+
+    function confirmFinishDay() {
+      document.getElementById('confirmDayModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmDayModal').classList.add('hidden');
+    }
+
+    function executeNextDay() {
+      closeConfirmModal();
+      playVictoryFanfare();
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.5 } });
+
+      if (gameState.currentDayIndex >= 6) {
+        // Completed week!
+        gameState.isCompleted = true;
+        saveState();
+        renderAppView();
+      } else {
+        gameState.currentDayIndex++;
+        saveState();
+        updateDashboardUI();
+        showToast(`أحسنت! انتقلت إلى ${DAYS_NAMES[gameState.currentDayIndex]} 🚀`, '🚀');
+      }
+    }
+
+    function renderReportScreen() {
+      const name = gameState.user.name || 'البطل';
+      const isGirl = gameState.user.gender === 'girl';
+      const totalPoints = calculateTotalScore();
+      const completedPrayers = countTotalCompletedPrayers();
+
+      document.getElementById('reportChildName').textContent = name;
+      document.getElementById('reportTotalPoints').textContent = totalPoints;
+      document.getElementById('reportCompletedCount').textContent = `${completedPrayers} / 35`;
+
+      const badgeElem = document.getElementById('badgeIcon');
+      const evalElem = document.getElementById('reportEvaluationText');
+
+      if (completedPrayers >= 32) {
+        badgeElem.textContent = '💎 تاج الأبطال الماسي';
+        evalElem.textContent = `ما شاء الله يا ${name}! أداء مذهل ومثابرة يُفتخر بها! أنت قدوة لكل أصدقائك 🌟`;
+      } else if (completedPrayers >= 25) {
+        badgeElem.textContent = '🥇 وسام الصلاة الذهبي';
+        evalElem.textContent = `بارك الله فيك يا ${name}! أسبوع ممتاز ومجهود رائع، تقبل الله منك 🌱`;
+      } else {
+        badgeElem.textContent = '🥈 وسام بطل البداية المباركة';
+        evalElem.textContent = `أحسنت المحاولة يا ${name}! في الأسبوع القادم ستكون أقوى وتجمع نقاطاً أكثر بإذن الله 💪`;
+      }
+
+      // Launch full festive fireworks
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.4 }
+      });
+    }
+
+    function sendWhatsAppReport() {
+      const name = gameState.user.name || 'البطل';
+      const isGirl = gameState.user.gender === 'girl';
+      const title = isGirl ? 'البطلة' : 'البطل';
+      const totalPoints = calculateTotalScore();
+      const completedPrayers = countTotalCompletedPrayers();
+
+      // Clean message formatting for WhatsApp
+      const messageText = 
+`السلام عليكم ورحمة الله وبركاته معلمتي الغالية 🌸
+أنا ${title}: *${name}* 🕌✨
+
+يسعدني أن أشاركك تقريري الأسبوعي لتحدي الصلاة:
+⭐ *مجموع النقاط:* ${totalPoints} نقطة
+🕌 *الصلوات المنجزة:* ${completedPrayers} من أصل 35 صلاة
+📅 *الأيام المكتملة:* 7 أيام متتالية
+
+أسأل الله العظيم أن يتقبل مني صلاتي ويجعلني من المحافظين عليها دائماً! 🤲🤍`;
+
+      const encodedMessage = encodeURIComponent(messageText);
+      const whatsappUrl = `https://wa.me/${TEACHER_PHONE}?text=${encodedMessage}`;
+
+      // Open WhatsApp in new tab/window
+      window.open(whatsappUrl, '_blank');
+      showToast('جاري فتح واتساب لإرسال التقرير للمعلمة...', '📲');
+    }
+
+    function openResetModal() {
+      document.getElementById('resetModal').classList.remove('hidden');
+    }
+
+    function closeResetModal() {
+      document.getElementById('resetModal').classList.add('hidden');
+    }
+
+    function resetChallengeFully() {
+      closeResetModal();
+      // Keep name and gender, reset progress
+      const savedUser = { ...gameState.user };
+      gameState = {
+        user: savedUser,
+        currentDayIndex: 0,
+        isCompleted: false,
+        daysData: [
+          { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+          { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+          { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+          { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+          { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+          { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } },
+          { prayers: { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false } }
+        ]
+      };
+      saveState();
+      showToast('بدأ أسبوع جديد بنجاح! بالتوفيق يا بطل ✨', '🌱');
+      renderAppView();
+    }
+
+    function renderAppView() {
+      const screenOnboarding = document.getElementById('screenOnboarding');
+      const screenDashboard = document.getElementById('screenDashboard');
+      const screenReport = document.getElementById('screenReport');
+      const userHeaderBadge = document.getElementById('userHeaderBadge');
+      const userDisplayName = document.getElementById('userDisplayName');
+      const userAvatarIcon = document.getElementById('userAvatarIcon');
+
+      // Check if user is registered
+      if (!gameState.user.name) {
+        screenOnboarding.classList.remove('hidden');
+        screenDashboard.classList.add('hidden');
+        screenReport.classList.add('hidden');
+        userHeaderBadge.classList.add('hidden');
+        return;
+      }
+
+      // Update header
+      userHeaderBadge.classList.remove('hidden');
+      userHeaderBadge.classList.add('flex');
+      userDisplayName.textContent = gameState.user.name;
+      userAvatarIcon.textContent = gameState.user.gender === 'girl' ? '👧' : '👦';
+      screenOnboarding.classList.add('hidden');
+
+      if (gameState.isCompleted) {
+        screenDashboard.classList.add('hidden');
+        screenReport.classList.remove('hidden');
+        renderReportScreen();
+      } else {
+        screenReport.classList.add('hidden');
+        screenDashboard.classList.remove('hidden');
+        updateDashboardUI();
+      }
+    }
+
+    // Initialize application on window load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+      if (gameState.user.gender) {
+        selectGender(gameState.user.gender);
+      }
+      if (gameState.user.name) {
+        document.getElementById('childNameInput').value = gameState.user.name;
+      }
+      renderAppView();
+    });
+  </script>
+</body>
+</html>
